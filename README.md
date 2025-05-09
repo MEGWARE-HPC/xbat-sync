@@ -19,7 +19,6 @@ FILTER_VALUES=<filter_value1>,<filter_value2>,...
 
 CHECK_METRIC_DB=<default: true>
 MIN_RUN_NR=<min_run_number>
-CHUNK_SIZE=<chunk_size>
 BATCH_SIZE=<batch_size>
 LOAD_LAST_SYNC=<default: false>
 ```
@@ -30,7 +29,7 @@ LOAD_LAST_SYNC=<default: false>
 ./setup.sh env src
 ```
 > [!NOTE]  
-> Please note: The environment variables for the source and destination XBAT servers must be filled in correctly.
+> Please note: The environment variables for the source and destination XBAT servers must be filled in correctly.  
 > FILTER_KEYS and FILTER_VALUES need to be the same length, and connected by commas to avoid adding spaces.
 
 ## Developer Usage
