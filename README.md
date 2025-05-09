@@ -29,8 +29,8 @@ LOAD_LAST_SYNC=<default: false>
 ./setup.sh env src
 ```
 > [!NOTE]  
-> Please note: The environment variables for the source and destination XBAT servers must be filled in correctly.  
-> FILTER_KEYS and FILTER_VALUES need to be the same length, and connected by commas to avoid adding spaces.
+> The environment variables for the source and destination XBAT servers must be filled in correctly.
+> FILTER_KEYS and FILTER_VALUES need to be the same length and connected by commas to avoid adding spaces.  
 
 ## Developer Usage
 
