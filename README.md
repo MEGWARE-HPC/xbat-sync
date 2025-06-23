@@ -53,7 +53,7 @@ python3 run.py
 
 ## Cronjob installation
 
-- Before executing the script, make sure the `.env` file has been generated in the `src` directory, which contains the required environment variables.
+- Before executing the script, make sure the `.env` file has been generated in the `src` directory, which contains the required [environment](#environment-generation) variables.
 - The setup script (`setup.sh`) can be used to install and uninstall the synchronization script. To schedule the script to run hourly, add a cron job with the `setup.sh` script:
 
 ```bash
