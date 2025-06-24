@@ -23,11 +23,12 @@ BATCH_SIZE=<batch_size>
 LOAD_LAST_SYNC=<default: false>
 ```
 
-- You can generate a default .env file to `src` directory use the following command:  
+- You can create the the `.env` file manually or generate it to `src` directory with the following command:
 
 ```bash
 ./setup.sh env src
 ```
+
 > [!NOTE]  
 > The environment variables for the source and destination XBAT servers must be filled in correctly.
 > FILTER_KEYS and FILTER_VALUES need to be the same length and connected by commas to avoid adding spaces.  
