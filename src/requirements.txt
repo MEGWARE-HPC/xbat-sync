@@ -1,0 +1,2 @@
+aiohttp==3.12.13
+python-dotenv==1.1.0
