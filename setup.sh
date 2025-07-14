@@ -115,6 +115,7 @@ EOF
 # Function to install the xbat-sync script
 install() {
     echo "Installing xbat-sync..."
+    uninstall
     # Define the source directory
     SRC_DIR="./src"
 
