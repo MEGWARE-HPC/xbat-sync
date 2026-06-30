@@ -41,7 +41,7 @@ generate_env() {
 
     # Validate the specified directory
     if [ "$ENV_DIR" != "." ] && [ "$ENV_DIR" != "src" ]; then
-        echo -e "${RED}Error: ${GREEN}.env${NC} file should only be generated in '.' or 'src' directories."
+        echo -e "${RED}Error: ${GREEN}.env${NC} file should only be generated in '.' or 'src' directories.${NC}"
         exit 1
     fi
 
@@ -55,39 +55,40 @@ generate_env() {
     fi
 
     if [ -n "$EXISTING_FILE" ]; then
-        echo -e "${RED}Warning: ${GREEN}.env${NC} file already exists in ${GREEN}$(dirname "$EXISTING_FILE") ${NC}directory. Skipping generation..."
+        echo -e "${RED}Warning: ${GREEN}.env${NC} file already exists in ${GREEN}$(dirname "$EXISTING_FILE")${NC} directory."
+        echo "Skipping generation..."
     else
         # Prompt user for input environment parameters
         read -p "Please enter the username of the source XBAT server (default admin): " XBAT_SOURCE_USER
         XBAT_SOURCE_USER=${XBAT_SOURCE_USER:-admin}
-        
+
         read -sp "Please enter the password of the source XBAT server: " XBAT_SOURCE_PASSWORD
         echo
-        
+
         read -p "Please enter the address of the source XBAT server (default localhost:7000): " XBAT_SOURCE_ADDRESS
         XBAT_SOURCE_ADDRESS=${XBAT_SOURCE_ADDRESS:-localhost:7000}
-        
+
         read -p "Please enter the username of the destination XBAT server (default admin): " XBAT_DEST_USER
         XBAT_DEST_USER=${XBAT_DEST_USER:-admin}
-        
+
         read -sp "Please enter the password of the destination XBAT server: " XBAT_DEST_PASSWORD
         echo
-        
+
         read -p "Please enter the address of the destination XBAT server (default localhost:7000): " XBAT_DEST_ADDRESS
         XBAT_DEST_ADDRESS=${XBAT_DEST_ADDRESS:-localhost:7000}
 
         read -p "Please set the filter keys separated by commas (e.g., issuer,state): " FILTER_KEYS
         read -p "Please set the corresponding filter values separated by commas (e.g., demo,done): " FILTER_VALUES
-        
+
         read -p "Please set whether to check the existence of metric data during synchronization (true/false): " CHECK_METRIC_DB
         CHECK_METRIC_DB=${CHECK_METRIC_DB:-true}
 
         read -p "Please set the minimum synchronization runNr or use default: " MIN_RUN_NR
         MIN_RUN_NR=${MIN_RUN_NR:-0}
-        
+
         read -p "Please set the number of simultaneous tasks or use default: " BATCH_SIZE
         BATCH_SIZE=${BATCH_SIZE:-1}
-        
+
         read -p "Please set whether to load the last synchronized runNrs (true/false): " LOAD_LAST_SYNC
         LOAD_LAST_SYNC=${LOAD_LAST_SYNC:-false}
 
@@ -107,7 +108,8 @@ BATCH_SIZE=$BATCH_SIZE
 LOAD_LAST_SYNC=$LOAD_LAST_SYNC
 EOF
 
-        echo -e "${YELLOW}Info: ${GREEN}.env${NC} file generated with user input values in ${GREEN}$ENV_DIR/.env${NC}. Please verify the parameters for the ${YELLOW}servers${NC}."
+        echo -e "${YELLOW}Info: ${GREEN}.env${NC} file generated with user input values in ${GREEN}$ENV_DIR/.env${NC}."
+        echo -e "Please verify the parameters for the ${YELLOW}servers${NC}."
     fi
 
 }
@@ -125,7 +127,37 @@ install() {
     elif [ -f "./.env" ]; then
         ENV_FILE="./.env"
     else
-        echo -e "${RED}Error: ${GREEN}.env${NC} file not found in either ./src or current path."
+        echo -e "${RED}Error: ${GREEN}.env${NC} file not found in either ./src or current path.${NC}"
+        exit 1
+    fi
+
+    # Validate required source files
+    if [ ! -f "$SRC_DIR/run.py" ]; then
+        echo -e "${RED}Error: ${GREEN}$SRC_DIR/run.py${NC} not found.${NC}"
+        exit 1
+    fi
+
+    if [ ! -f "$SRC_DIR/pyproject.toml" ]; then
+        echo -e "${RED}Error: ${GREEN}$SRC_DIR/pyproject.toml${NC} not found.${NC}"
+        exit 1
+    fi
+
+    if [ ! -f "$SRC_DIR/uv.lock" ]; then
+        echo -e "${RED}Error: ${GREEN}$SRC_DIR/uv.lock${NC} not found.${NC}"
+        echo "Please run the following command first:"
+        echo ""
+        echo "  cd src && uv lock"
+        echo ""
+        exit 1
+    fi
+
+    # Ensure uv is available
+    if ! command -v uv >/dev/null 2>&1; then
+        echo -e "${RED}Error: uv is not installed or not available in PATH.${NC}"
+        echo "Please install uv first:"
+        echo ""
+        echo "  https://docs.astral.sh/uv/getting-started/installation/"
+        echo ""
         exit 1
     fi
 
@@ -134,41 +166,41 @@ install() {
 
     # Copy files from src to sync path
     cp "$SRC_DIR/run.py" "$SYNC_DIR/"
-    cp "$SRC_DIR/requirements.txt" "$SYNC_DIR/"
+    cp "$SRC_DIR/pyproject.toml" "$SYNC_DIR/"
+    cp "$SRC_DIR/uv.lock" "$SYNC_DIR/"
+    cp "$SRC_DIR/.python-version" "$SYNC_DIR/"
     cp "$ENV_FILE" "$SYNC_DIR/"
 
     # Navigate to the xbat-sync directory
-    cd "$SYNC_DIR" || exit
+    cd "$SYNC_DIR" || exit 1
 
-    # Create a virtual environment if it doesn't exist
-    if [ ! -d "venv" ]; then
-        python3 -m venv venv
-    fi
-    # Activate the virtual environment and install dependencies
-    source venv/bin/activate
-    pip3 install -r requirements.txt
-    deactivate
+    # Create or update the uv-managed virtual environment
+    uv sync --frozen --no-dev
 
-    # Add a cronjob to run the script every hour using the virtual environment's Python interpreter
-    (crontab -l 2>/dev/null; echo "0 * * * * $SYNC_DIR/venv/bin/python3 $SYNC_DIR/run.py") | crontab -
+    # Add a cronjob to run the script every hour using the uv-managed Python interpreter
+    (crontab -l 2>/dev/null; echo "0 * * * * cd $SYNC_DIR && $SYNC_DIR/.venv/bin/python $SYNC_DIR/run.py") | crontab -
 
-    echo "Setup complete. The xbat-sync script will run every hour."
-}
+    echo "Setup complete."
+    echo "The xbat-sync script will run every hour."
+    }
 
 # Function to uninstall the sync script
 uninstall() {
     echo "Uninstalling xbat-sync script..."
-    # Remove the cronjob that runs run.py every hour
-    (crontab -l 2>/dev/null | grep -v "$SYNC_DIR/venv/bin/python3 $SYNC_DIR/run.py") | crontab -
+
+    # Remove both the old venv-based cronjob and the new uv-based cronjob
+    (crontab -l 2>/dev/null \
+        | grep -v "$SYNC_DIR/venv/bin/python3 $SYNC_DIR/run.py" \
+        | grep -v "cd $SYNC_DIR && $SYNC_DIR/.venv/bin/python $SYNC_DIR/run.py") | crontab -
 
     # Delete the xbat-sync directory
     rm -rf "$SYNC_DIR"
 
     echo "Uninstallation complete."
-}
+    }
 
 # Check if an argument is provided and call the appropriate function
-case "$1" in
+case "${1:-}" in
     env)
         generate_env "$@"
         ;;
@@ -182,7 +214,8 @@ case "$1" in
         help_menu
         ;;
     *)
-        echo -e "${RED}Error: Unknown command '${1}'. Please execute '${0} help' to query parameters.${NC}"
+        echo -e "${RED}Error: Unknown command '${1:-}'.${NC}"
+        echo -e "Please execute '${0} help' to query parameters."
         exit 1
         ;;
-esac
+    esac
